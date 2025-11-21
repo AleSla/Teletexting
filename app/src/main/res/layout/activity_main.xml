@@ -1,0 +1,522 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+     xmlns:android="http://schemas.android.com/apk/res/android"
+     xmlns:app="http://schemas.android.com/apk/res-auto"
+     xmlns:tools="http://schemas.android.com/tools"
+     android:layout_height="match_parent"
+     android:layout_width="match_parent"
+     tools:context=".MainActivity">
+
+    <com.google.android.material.appbar.AppBarLayout
+         android:layout_height="wrap_content"
+         android:layout_width="match_parent"
+         android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
+
+        <androidx.appcompat.widget.Toolbar
+             android:layout_height="?attr/actionBarSize"
+             android:layout_width="match_parent"
+             android:background="?attr/colorPrimary"
+             app:title="Teletexting"
+             app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
+             android:id="@+id/toolbar"
+             app:subtitle="No file opened" />
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <LinearLayout
+         android:layout_height="match_parent"
+         android:layout_width="match_parent"
+         app:layout_behavior="@string/appbar_scrolling_view_behavior"
+         android:orientation="vertical">
+
+        <com.google.android.material.card.MaterialCardView
+             android:layout_height="wrap_content"
+             android:layout_width="match_parent"
+             android:layout_margin="8dp"
+             app:cardElevation="2dp">
+
+            <LinearLayout
+                 android:layout_height="wrap_content"
+                 android:layout_width="match_parent"
+                 android:padding="12dp"
+                 android:orientation="vertical">
+
+                <LinearLayout
+                     android:layout_height="wrap_content"
+                     android:layout_width="match_parent"
+                     android:orientation="horizontal">
+
+                    <TextView
+                         android:layout_height="wrap_content"
+                         android:layout_width="wrap_content"
+                         android:textSize="14sp"
+                         android:text="Page: "
+                         android:textStyle="bold" />
+
+                    <TextView
+                         android:layout_height="wrap_content"
+                         android:layout_width="wrap_content"
+                         android:layout_marginEnd="16dp"
+                         android:textSize="14sp"
+                         android:id="@+id/tvStatusPage"
+                         android:text="P100" />
+
+                    <TextView
+                         android:layout_height="wrap_content"
+                         android:layout_width="wrap_content"
+                         android:textSize="14sp"
+                         android:text="Pos: "
+                         android:textStyle="bold" />
+
+                    <TextView
+                         android:layout_height="wrap_content"
+                         android:layout_width="wrap_content"
+                         android:layout_marginEnd="16dp"
+                         android:textSize="14sp"
+                         android:id="@+id/tvStatusPos"
+                         android:text="(0,0)" />
+
+                    <TextView
+                         android:layout_height="wrap_content"
+                         android:layout_width="wrap_content"
+                         android:textSize="14sp"
+                         android:text="Char: "
+                         android:textStyle="bold" />
+
+                    <TextView
+                         android:layout_height="wrap_content"
+                         android:layout_width="wrap_content"
+                         android:layout_marginEnd="16dp"
+                         android:textSize="14sp"
+                         android:id="@+id/tvStatusChar"
+                         android:text="0x20" />
+
+                    <TextView
+                         android:layout_height="wrap_content"
+                         android:layout_width="wrap_content"
+                         android:textSize="14sp"
+                         android:text="CRC: "
+                         android:textStyle="bold" />
+
+                    <TextView
+                         android:layout_height="wrap_content"
+                         android:layout_width="wrap_content"
+                         android:textSize="14sp"
+                         android:textColor="#4CAF50"
+                         android:id="@+id/tvStatusCRC"
+                         android:text="OK" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <ScrollView
+             android:layout_height="0dp"
+             android:layout_width="match_parent"
+             android:layout_weight="1">
+
+            <HorizontalScrollView
+                 android:layout_height="wrap_content"
+                 android:layout_width="match_parent"
+                 android:fillViewport="true">
+
+                <LinearLayout
+                     android:layout_height="wrap_content"
+                     android:layout_width="wrap_content"
+                     android:padding="16dp"
+                     android:orientation="vertical">
+
+                    <bg.alesla.teletexting.view.TeletextView
+                         android:layout_height="wrap_content"
+                         android:layout_width="wrap_content"
+                         android:id="@+id/teletextView"
+                         android:layout_gravity="center" />
+
+                    <LinearLayout
+                         android:layout_height="wrap_content"
+                         android:layout_width="match_parent"
+                         android:gravity="center"
+                         android:orientation="horizontal"
+                         android:layout_marginTop="16dp">
+
+                        <com.google.android.material.button.MaterialButton
+                             android:layout_height="48dp"
+                             android:layout_width="48dp"
+                             android:id="@+id/btnPrevPage"
+                             app:icon="@drawable/arrow_back"
+                             app:iconGravity="textStart"
+                             app:iconPadding="0dp"/>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="horizontal"
+                            android:gravity="center">
+
+                            <com.google.android.material.textfield.TextInputLayout
+                                android:layout_width="80dp"
+                                android:layout_height="wrap_content"
+                                android:hint="Mag"
+                                android:layout_marginEnd="4dp"
+                                style="@style/Widget.Material3.TextInputLayout.OutlinedBox.Dense.ExposedDropdownMenu">
+
+                                <AutoCompleteTextView
+                                    android:id="@+id/spinnerMagazine"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:inputType="none"
+                                    android:textSize="14sp" />
+
+                            </com.google.android.material.textfield.TextInputLayout>
+
+                            <com.google.android.material.textfield.TextInputLayout
+                                android:layout_width="100dp"
+                                android:layout_height="wrap_content"
+                                android:hint="Page"
+                                android:layout_marginEnd="4dp"
+                                style="@style/Widget.Material3.TextInputLayout.OutlinedBox.Dense.ExposedDropdownMenu">
+
+                                <AutoCompleteTextView
+                                    android:id="@+id/spinnerPage"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:inputType="none"
+                                    android:textSize="14sp" />
+
+                            </com.google.android.material.textfield.TextInputLayout>
+
+                            <com.google.android.material.textfield.TextInputLayout
+                                android:layout_width="80dp"
+                                android:layout_height="wrap_content"
+                                android:hint="Sub"
+                                android:layout_marginEnd="4dp"
+                                style="@style/Widget.Material3.TextInputLayout.OutlinedBox.Dense.ExposedDropdownMenu">
+
+                                <AutoCompleteTextView
+                                    android:id="@+id/spinnerSubpage"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:inputType="none"
+                                    android:textSize="14sp" />
+
+                            </com.google.android.material.textfield.TextInputLayout>
+
+                        </LinearLayout>
+
+
+                        <com.google.android.material.button.MaterialButton
+                             android:layout_height="48dp"
+                             android:layout_width="48dp"
+                             
+                             android:id="@+id/btnNextPage"
+                             app:icon="@drawable/arrow_forward"
+                            app:iconGravity="textStart"
+                             app:iconPadding="0dp"/>
+
+                    </LinearLayout>
+
+                    <TextView
+                         android:layout_height="wrap_content"
+                         android:layout_width="wrap_content"
+                         android:layout_marginBottom="8dp"
+                         android:layout_marginTop="16dp"
+                         android:text="Text Colors"
+                         android:textStyle="bold" />
+
+                    <LinearLayout
+                         android:layout_height="wrap_content"
+                         android:layout_width="match_parent"
+                         android:gravity="center_horizontal"
+                         android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                             android:layout_height="48dp"
+                             android:layout_width="40dp"
+                             android:layout_marginStart="4dp"
+                             android:layout_marginEnd="4dp"
+                             android:backgroundTint="#000000"
+                             style="@style/Widget.Material3.Button.TonalButton"
+                             android:id="@+id/btnColorBlack" />
+
+                        <com.google.android.material.button.MaterialButton
+                             android:layout_height="48dp"
+                             android:layout_width="40dp"
+                             android:layout_marginStart="4dp"
+                             android:layout_marginEnd="4dp"
+                             android:backgroundTint="#FF0000"
+                             style="@style/Widget.Material3.Button.TonalButton"
+                             android:id="@+id/btnColorRed" />
+
+                        <com.google.android.material.button.MaterialButton
+                             android:layout_height="48dp"
+                             android:layout_width="40dp"
+                             android:layout_marginStart="4dp"
+                             android:layout_marginEnd="4dp"
+                             android:backgroundTint="#00FF00"
+                             style="@style/Widget.Material3.Button.TonalButton"
+                             android:id="@+id/btnColorGreen" />
+
+                        <com.google.android.material.button.MaterialButton
+                             android:layout_height="48dp"
+                             android:layout_width="40dp"
+                             android:layout_marginStart="4dp"
+                             android:layout_marginEnd="4dp"
+                             android:backgroundTint="#FFFF00"
+                             style="@style/Widget.Material3.Button.TonalButton"
+                             android:id="@+id/btnColorYellow" />
+
+                        <com.google.android.material.button.MaterialButton
+                             android:layout_height="48dp"
+                             android:layout_width="40dp"
+                             android:layout_marginStart="4dp"
+                             android:layout_marginEnd="4dp"
+                             android:backgroundTint="#0000FF"
+                             style="@style/Widget.Material3.Button.TonalButton"
+                             android:id="@+id/btnColorBlue" />
+
+                        <com.google.android.material.button.MaterialButton
+                             android:layout_height="48dp"
+                             android:layout_width="40dp"
+                             android:layout_marginStart="4dp"
+                             android:layout_marginEnd="4dp"
+                             android:backgroundTint="#FF00FF"
+                             style="@style/Widget.Material3.Button.TonalButton"
+                             android:id="@+id/btnColorMagenta" />
+
+                        <com.google.android.material.button.MaterialButton
+                             android:layout_height="48dp"
+                             android:layout_width="40dp"
+                             android:layout_marginStart="4dp"
+                             android:layout_marginEnd="4dp"
+                             android:backgroundTint="#00FFFF"
+                             style="@style/Widget.Material3.Button.TonalButton"
+                             android:id="@+id/btnColorCyan" />
+
+                        <com.google.android.material.button.MaterialButton
+                             android:layout_height="48dp"
+                             android:layout_width="40dp"
+                            android:layout_marginStart="4dp"
+                             android:layout_marginEnd="4dp"
+                             android:backgroundTint="#FFFFFF"
+                             style="@style/Widget.Material3.Button.TonalButton"
+                             android:id="@+id/btnColorWhite" />
+
+                    </LinearLayout>
+
+                    <TextView
+                         android:layout_height="wrap_content"
+                         android:layout_width="wrap_content"
+                         android:layout_marginBottom="8dp"
+                         android:layout_marginTop="16dp"
+                         android:text="Mosaic Colors"
+                         android:textStyle="bold" />
+
+                    <LinearLayout
+                         android:layout_height="wrap_content"
+                         android:layout_width="match_parent"
+                         android:orientation="horizontal"
+                         android:gravity="center_horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                             android:layout_height="48dp"
+                             android:layout_width="40dp"
+                             android:layout_marginStart="4dp"
+                             android:layout_marginEnd="4dp"
+                             android:backgroundTint="#000000"
+                             style="@style/Widget.Material3.Button.TonalButton"
+                             android:id="@+id/btnMosBlack" />
+
+                        <com.google.android.material.button.MaterialButton
+                             android:layout_height="48dp"
+                             android:layout_width="40dp"
+                             android:layout_marginStart="4dp"
+                             android:layout_marginEnd="4dp"
+                             android:backgroundTint="#FF0000"
+                             style="@style/Widget.Material3.Button.TonalButton"
+                             android:id="@+id/btnMosRed" />
+
+                        <com.google.android.material.button.MaterialButton
+                             android:layout_height="48dp"
+                             android:layout_width="40dp"
+                             android:layout_marginStart="4dp"
+                             android:layout_marginEnd="4dp"
+                             android:backgroundTint="#00FF00"
+                             style="@style/Widget.Material3.Button.TonalButton"
+                             android:id="@+id/btnMosGreen" />
+
+                        <com.google.android.material.button.MaterialButton
+                             android:layout_height="48dp"
+                             android:layout_width="40dp"
+                             android:layout_marginStart="4dp"
+                             android:layout_marginEnd="4dp"
+                             android:backgroundTint="#FFFF00"
+                             style="@style/Widget.Material3.Button.TonalButton"
+                             android:id="@+id/btnMosYellow" />
+
+                        <com.google.android.material.button.MaterialButton
+                             android:layout_height="48dp"
+                             android:layout_width="40dp"
+                             android:layout_marginStart="4dp"
+                             android:layout_marginEnd="4dp"
+                             android:backgroundTint="#0000FF"
+                             style="@style/Widget.Material3.Button.TonalButton"
+                             android:id="@+id/btnMosBlue" />
+
+                        <com.google.android.material.button.MaterialButton
+                             android:layout_height="48dp"
+                             android:layout_width="40dp"
+                             android:layout_marginStart="4dp"
+                             android:layout_marginEnd="4dp"
+                             android:backgroundTint="#FF00FF"
+                             style="@style/Widget.Material3.Button.TonalButton"
+                             android:id="@+id/btnMosMagenta" />
+
+                        <com.google.android.material.button.MaterialButton
+                             android:layout_height="48dp"
+                             android:layout_width="40dp"
+                             android:layout_marginStart="4dp"
+                             android:layout_marginEnd="4dp"
+                             android:backgroundTint="#00FFFF"
+                             style="@style/Widget.Material3.Button.TonalButton"
+                             android:id="@+id/btnMosCyan" />
+
+                        <com.google.android.material.button.MaterialButton
+                             android:layout_height="48dp"
+                             android:layout_width="40dp"
+                             android:layout_marginStart="4dp"
+                             android:layout_marginEnd="4dp"
+                             android:backgroundTint="#FFFFFF"
+                             style="@style/Widget.Material3.Button.TonalButton"
+                             android:id="@+id/btnMosWhite" />
+
+                    </LinearLayout>
+
+                    <TextView
+                         android:layout_height="wrap_content"
+                         android:layout_width="wrap_content"
+                         android:layout_marginBottom="8dp"
+                         android:layout_marginTop="16dp"
+                         android:text="Control Code Editor"
+                         android:textStyle="bold" />
+
+                    <LinearLayout
+                         android:layout_height="wrap_content"
+                         android:layout_width="match_parent"
+                         android:gravity="center_vertical"
+                         android:orientation="horizontal">
+
+                        <TextView
+                             android:layout_height="wrap_content"
+                             android:layout_width="wrap_content"
+                             android:layout_marginEnd="8dp"
+                             android:textSize="14sp"
+                             android:text="Hex Code: " />
+
+                        <com.google.android.material.textfield.TextInputLayout
+                             android:layout_height="wrap_content"
+                             android:layout_width="0dp"
+                             android:hint="0x00-0x7F"
+                                                          android:layout_weight="1">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                 android:layout_height="wrap_content"
+                                 android:layout_width="match_parent"
+                                 android:textSize="14sp"
+                                 android:maxLength="4"
+                                 android:inputType="text"
+                                 android:id="@+id/etControlCode" />
+
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <com.google.android.material.button.MaterialButton
+                             android:layout_height="wrap_content"
+                             android:layout_width="wrap_content"
+                             
+                             android:layout_marginStart="8dp"
+                             android:id="@+id/btnSetControlCode"
+                             android:text="Set" />
+
+                    </LinearLayout>
+
+                    <TextView
+                         android:layout_height="wrap_content"
+                         android:layout_width="wrap_content"
+                         android:layout_marginBottom="8dp"
+                         android:layout_marginTop="16dp"
+                         android:text="Quick Controls"
+                         android:textStyle="bold" />
+
+                    <LinearLayout
+                         android:layout_height="wrap_content"
+                         android:layout_width="match_parent"
+                         android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                             android:layout_height="wrap_content"
+                             android:layout_width="wrap_content"
+                             android:layout_marginEnd="4dp"
+                             
+                             android:id="@+id/btnFlash"
+                             android:text="Flash" />
+
+                        <com.google.android.material.button.MaterialButton
+                             android:layout_height="wrap_content"
+                             android:layout_width="wrap_content"
+                             android:layout_marginEnd="4dp"
+                             
+                             android:id="@+id/btnDoubleHeight"
+                             android:text="Double H" />
+
+                        <com.google.android.material.button.MaterialButton
+                             android:layout_height="wrap_content"
+                             android:layout_width="wrap_content"
+                             android:layout_marginEnd="4dp"
+                             
+                             android:id="@+id/btnNormalHeight"
+                             android:text="Normal H" />
+
+                        <com.google.android.material.button.MaterialButton
+                             android:layout_height="wrap_content"
+                             android:layout_width="wrap_content"
+                             android:paddingStart="4dp"
+                            android:paddingEnd="4dp"
+                             android:id="@+id/btnNewBg"
+                             android:text="New BG" />
+
+                    </LinearLayout>
+
+                    <TextView
+                         android:layout_height="wrap_content"
+                         android:layout_width="wrap_content"
+                         android:layout_marginBottom="8dp"
+                         android:layout_marginTop="16dp"
+                         android:text="Character Set"
+                         android:textStyle="bold" />
+
+                    <com.google.android.material.textfield.TextInputLayout
+                         android:layout_height="wrap_content"
+                         android:layout_width="match_parent"
+                         android:hint="Select charset"
+                         style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
+
+                        <AutoCompleteTextView
+                             android:layout_height="wrap_content"
+                             android:layout_width="match_parent"
+                             android:textSize="14sp"
+                             android:inputType="none"
+                             android:id="@+id/charsetSpinner" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                </LinearLayout>
+
+            </HorizontalScrollView>
+
+        </ScrollView>
+
+    </LinearLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

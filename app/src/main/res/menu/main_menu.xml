@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_undo"
+        android:title="Undo"
+        android:icon="@drawable/undo"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/action_redo"
+        android:title="Redo"
+        android:icon="@drawable/redo"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/action_open"
+        android:title="Open"
+        android:icon="@drawable/folder_open"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/action_save"
+        android:title="Save"
+        android:icon="@drawable/save"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/action_save_as"
+        android:title="Save As..."
+        android:icon="@drawable/save_as"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_export_png"
+        android:title="Export PNG"
+        android:icon="@drawable/image_arrow_up"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_clear"
+        android:title="Clear Page"
+        android:icon="@drawable/ink_eraser"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_toggle_grid"
+        android:title="Toggle Grid"
+        android:icon="@drawable/grid_on"
+        android:checkable="true"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_toggle_codes"
+        android:title="Show Control Codes"
+        android:icon="@drawable/ic_123"
+        android:checkable="true"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_insert_flash"
+        android:title="Insert Flash"
+        android:icon="@drawable/flash_on"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_hide_keyboard"
+        android:title="Hide Keyboard"
+        android:icon="@drawable/keyboard_hide"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_delete_page"
+        android:title="Delete Current Page"
+        android:icon="@drawable/delete"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_bw_mode"
+        android:title="Black &amp; White"
+        android:icon="@drawable/filter_b_and_w"
+        android:checkable="true"
+        app:showAsAction="ifRoom" />
+
+</menu>
