@@ -1,6 +1,6 @@
 # Teletexting: A teletext editor and viewer in your pocket 
 
-<p align="center"><img stc="https://github.com/AleSla/Teletexting/blob/main/app/src/main/res/mipmap-xxhdpi/ic_launcher.png"/></p>
+![App Icon](https://raw.githubusercontent.com/AleSla/Teletexting/refs/heads/main/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png)
 
 A pure native Android application for viewing and editing teletext pages in multiple historical formats.
 
