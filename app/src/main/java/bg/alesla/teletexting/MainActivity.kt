@@ -400,18 +400,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadT42Pages(data: ByteArray) {
         allPages.clear()
-        var offset = 0
 
-        while (offset + 42 <= data.size) {
-            val pageData =
-                T42Parser.parse(data.sliceArray(offset until minOf(offset + 1050, data.size)))
-            if (pageData != null) {
-                val pageNum = extractPageNumber(pageData)
-                allPages.add(PageData(pageNum, "1", pageData))
-                offset += 1050 // 25 rows * 42 bytes
-            } else {
-                break
-            }
+        // Use the new parseMultiPage method
+        val pages = T42Parser.parseMultiPage(data)
+
+        for ((index, pageData) in pages.withIndex()) {
+            val pageNum = extractPageNumber(pageData)
+            val subPage = (index + 1).toString() // Sequential subpage numbering
+            allPages.add(PageData(pageNum, subPage, pageData))
         }
     }
 
