@@ -1,10 +1,7 @@
 package bg.alesla.teletexting.view
 
 import android.content.Context
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
-import android.graphics.Typeface
+import android.graphics.*
 import android.util.AttributeSet
 import android.view.GestureDetector
 import android.view.KeyEvent
@@ -15,6 +12,7 @@ import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
 import android.view.inputmethod.InputMethodManager
 import bg.alesla.teletexting.utils.CharsetManager
+import kotlin.math.floor
 
 /**
  * Custom View for rendering Teletext Level 1 pages with full attribute support
@@ -58,6 +56,7 @@ class TeletextView @JvmOverloads constructor(
     private var textMode = Array(ROWS) { BooleanArray(COLS) { true } }
     private var doubleHeight = Array(ROWS) { BooleanArray(COLS) { false } }
     private var flashState = Array(ROWS) { BooleanArray(COLS) { false } }
+    private var separatedGraphics = Array(ROWS) { BooleanArray(COLS) { false } }
 
     // Display options
     var showGrid = false
@@ -213,26 +212,22 @@ class TeletextView @JvmOverloads constructor(
     var onCursorChanged: ((x: Int, y: Int) -> Unit)? = null
 
     // Gesture detection
-    private val gestureDetector =
-        GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
-            override fun onSingleTapUp(e: MotionEvent): Boolean {
-                // e.x and e.y are already scaled by onTouchEvent
-                val col = (e.x / CELL_WIDTH).toInt().coerceIn(0, COLS - 1)
-                val row = (e.y / CELL_HEIGHT).toInt().coerceIn(0, ROWS - 1)
+    private val gestureDetector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
+        override fun onSingleTapUp(e: MotionEvent): Boolean {
+            // e.x and e.y are already scaled by onTouchEvent
+            val col = (e.x / CELL_WIDTH).toInt().coerceIn(0, COLS - 1)
+            val row = (e.y / CELL_HEIGHT).toInt().coerceIn(0, ROWS - 1)
 
-                // Debug logging
-                android.util.Log.d(
-                    "TeletextView",
-                    "Touch at: (${e.x}, ${e.y}) -> Cell: ($col, $row)"
-                )
+            // Debug logging
+            android.util.Log.d("TeletextView", "Touch at: (${e.x}, ${e.y}) -> Cell: ($col, $row)")
 
-                cursorX = col
-                cursorY = row
+            cursorX = col
+            cursorY = row
 
-                onCellClicked?.invoke(col, row)
-                return true
-            }
-        })
+            onCellClicked?.invoke(col, row)
+            return true
+        }
+    })
 
     init {
         post(flashRunnable)
@@ -251,10 +246,7 @@ class TeletextView @JvmOverloads constructor(
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         // Log all touch events
-        android.util.Log.d(
-            "TeletextView",
-            "onTouchEvent: action=${event.action}, x=${event.x}, y=${event.y}"
-        )
+        android.util.Log.d("TeletextView", "onTouchEvent: action=${event.action}, x=${event.x}, y=${event.y}")
 
         // Request parent to not intercept touch events
         parent?.requestDisallowInterceptTouchEvent(true)
@@ -271,10 +263,7 @@ class TeletextView @JvmOverloads constructor(
                 val col = (canvasX / CELL_WIDTH).toInt().coerceIn(0, COLS - 1)
                 val row = (canvasY / CELL_HEIGHT).toInt().coerceIn(0, ROWS - 1)
 
-                android.util.Log.d(
-                    "TeletextView",
-                    "Touch: canvas=($canvasX, $canvasY) -> cell=($col, $row)"
-                )
+                android.util.Log.d("TeletextView", "Touch: canvas=($canvasX, $canvasY) -> cell=($col, $row)")
 
                 cursorX = col
                 cursorY = row
@@ -336,7 +325,6 @@ class TeletextView @JvmOverloads constructor(
                 invalidate()
                 return true
             }
-
             KeyEvent.KEYCODE_ENTER -> {
                 // Move to start of next row
                 _cursorY++
@@ -350,7 +338,6 @@ class TeletextView @JvmOverloads constructor(
                 invalidate()
                 return true
             }
-
             KeyEvent.KEYCODE_DPAD_LEFT -> {
                 if (_cursorX > 0) {
                     _cursorX--
@@ -366,7 +353,6 @@ class TeletextView @JvmOverloads constructor(
                 invalidate()
                 return true
             }
-
             KeyEvent.KEYCODE_DPAD_RIGHT -> {
                 if (_cursorX < COLS - 1) {
                     _cursorX++
@@ -382,7 +368,6 @@ class TeletextView @JvmOverloads constructor(
                 invalidate()
                 return true
             }
-
             KeyEvent.KEYCODE_DPAD_UP -> {
                 if (_cursorY > 0) {
                     _cursorY--
@@ -393,7 +378,6 @@ class TeletextView @JvmOverloads constructor(
                 invalidate()
                 return true
             }
-
             KeyEvent.KEYCODE_DPAD_DOWN -> {
                 if (_cursorY < ROWS - 1) {
                     _cursorY++
@@ -486,6 +470,7 @@ class TeletextView @JvmOverloads constructor(
             var currentText = true
             var currentDouble = false
             var currentFlash = false
+            var currentSeparated = false
 
             for (col in 0 until COLS) {
                 val ch = pageData[row][col]
@@ -495,7 +480,6 @@ class TeletextView @JvmOverloads constructor(
                         currentFg = ch
                         currentText = true
                     }
-
                     ch == 0x09 -> currentFlash = false // Steady
                     ch == 0x08 -> currentFlash = true  // Flash
                     ch == 0x0C -> currentDouble = false // Normal height
@@ -504,7 +488,8 @@ class TeletextView @JvmOverloads constructor(
                         currentFg = ch - 0x10
                         currentText = false
                     }
-
+                    ch == 0x19 -> currentSeparated = false // Contiguous graphics
+                    ch == 0x1A -> currentSeparated = true  // Separated graphics
                     ch == 0x1C -> currentBg = 0 // Black background
                     ch == 0x1D -> currentBg = currentFg // New background
                 }
@@ -514,6 +499,7 @@ class TeletextView @JvmOverloads constructor(
                 textMode[row][col] = currentText
                 doubleHeight[row][col] = currentDouble
                 flashState[row][col] = currentFlash
+                separatedGraphics[row][col] = currentSeparated
             }
         }
     }
@@ -534,22 +520,10 @@ class TeletextView @JvmOverloads constructor(
         // Draw grid
         if (showGrid) {
             for (row in 0..ROWS) {
-                canvas.drawLine(
-                    0f,
-                    row * CELL_HEIGHT,
-                    COLS * CELL_WIDTH,
-                    row * CELL_HEIGHT,
-                    gridPaint
-                )
+                canvas.drawLine(0f, row * CELL_HEIGHT, COLS * CELL_WIDTH, row * CELL_HEIGHT, gridPaint)
             }
             for (col in 0..COLS) {
-                canvas.drawLine(
-                    col * CELL_WIDTH,
-                    0f,
-                    col * CELL_WIDTH,
-                    ROWS * CELL_HEIGHT,
-                    gridPaint
-                )
+                canvas.drawLine(col * CELL_WIDTH, 0f, col * CELL_WIDTH, ROWS * CELL_HEIGHT, gridPaint)
             }
         }
 
@@ -585,7 +559,7 @@ class TeletextView @JvmOverloads constructor(
     private fun drawCell(canvas: Canvas, row: Int, col: Int) {
         var ch = pageData[row][col]
         var fgIdx = fgColors[row][col]
-        bgColors[row][col]
+        var bgIdx = bgColors[row][col]
         var isText = textMode[row][col]
         var dbl = 0
 
@@ -605,7 +579,6 @@ class TeletextView @JvmOverloads constructor(
         if (isFlashing && !flashVisible) return // Hide flashing content
 
         val fgColor = if (blackWhiteMode) Color.WHITE else colors[fgIdx]
-        val displayChar = CharsetManager.mapChar(ch, currentCharset)
 
         if (ch < 0x20) {
             // Control code
@@ -623,23 +596,23 @@ class TeletextView @JvmOverloads constructor(
                 // Clip to both current and next row
                 canvas.clipRect(x, y, x + CELL_WIDTH, y + CELL_HEIGHT * 2)
                 // Draw character at double size, baseline in middle of two-row span
-                val baseline = y + CELL_HEIGHT * 2f
-
+                val baseline = y + CELL_HEIGHT * 1.5f
+                val displayChar = CharsetManager.mapChar(ch, currentCharset)
                 canvas.drawText(displayChar, x + 2, baseline, textPaintDouble)
                 canvas.restore()
             } else {
                 // Normal height text
                 textPaint.color = fgColor
-                val baseline = y + CELL_HEIGHT * 1f
-                canvas.drawText(displayChar, x + 2, baseline, textPaint)
+                val baseline = y + CELL_HEIGHT * 0.75f
+                canvas.drawText(ch.toChar().toString(), x + 2, baseline, textPaint)
             }
         } else {
             // Graphics mosaic
-            drawMosaic(canvas, ch, x, y, fgColor, dbl)
+            drawMosaic(canvas, ch, x, y, fgColor, dbl, separatedGraphics[row][col])
         }
     }
 
-    private fun drawMosaic(canvas: Canvas, ch: Int, x: Float, y: Float, color: Int, dbl: Int) {
+    private fun drawMosaic(canvas: Canvas, ch: Int, x: Float, y: Float, color: Int, dbl: Int, separated: Boolean) {
         val code = ch and 0x7F
         val sixW = CELL_WIDTH / 2
         val sixH = when (dbl) {
@@ -650,80 +623,27 @@ class TeletextView @JvmOverloads constructor(
 
         bgPaint.color = color
 
+        // Add spacing for separated graphics
+        val spacing = if (separated) 2f else 0f
+
         when (dbl) {
             1 -> { // Top half
-                if (code and 0x01 != 0) canvas.drawRect(x, y, x + sixW, y + sixH, bgPaint)
-                if (code and 0x02 != 0) canvas.drawRect(
-                    x + sixW,
-                    y,
-                    x + CELL_WIDTH,
-                    y + sixH,
-                    bgPaint
-                )
-                if (code and 0x04 != 0) canvas.drawRect(
-                    x,
-                    y + sixH,
-                    x + sixW,
-                    y + CELL_HEIGHT,
-                    bgPaint
-                )
-                if (code and 0x08 != 0) canvas.drawRect(
-                    x + sixW,
-                    y + sixH,
-                    x + CELL_WIDTH,
-                    y + CELL_HEIGHT,
-                    bgPaint
-                )
+                if (code and 0x01 != 0) canvas.drawRect(x + spacing, y + spacing, x + sixW - spacing, y + sixH - spacing, bgPaint)
+                if (code and 0x02 != 0) canvas.drawRect(x + sixW + spacing, y + spacing, x + CELL_WIDTH - spacing, y + sixH - spacing, bgPaint)
+                if (code and 0x04 != 0) canvas.drawRect(x + spacing, y + sixH + spacing, x + sixW - spacing, y + CELL_HEIGHT - spacing, bgPaint)
+                if (code and 0x08 != 0) canvas.drawRect(x + sixW + spacing, y + sixH + spacing, x + CELL_WIDTH - spacing, y + CELL_HEIGHT - spacing, bgPaint)
             }
-
             2 -> { // Bottom half
-                if (code and 0x10 != 0) canvas.drawRect(x, y, x + sixW, y + CELL_HEIGHT, bgPaint)
-                if (code and 0x40 != 0) canvas.drawRect(
-                    x + sixW,
-                    y,
-                    x + CELL_WIDTH,
-                    y + CELL_HEIGHT,
-                    bgPaint
-                )
+                if (code and 0x10 != 0) canvas.drawRect(x + spacing, y + spacing, x + sixW - spacing, y + CELL_HEIGHT - spacing, bgPaint)
+                if (code and 0x40 != 0) canvas.drawRect(x + sixW + spacing, y + spacing, x + CELL_WIDTH - spacing, y + CELL_HEIGHT - spacing, bgPaint)
             }
-
             else -> { // Normal height - 6 sixels
-                if (code and 0x01 != 0) canvas.drawRect(x, y, x + sixW, y + sixH, bgPaint)
-                if (code and 0x02 != 0) canvas.drawRect(
-                    x + sixW,
-                    y,
-                    x + CELL_WIDTH,
-                    y + sixH,
-                    bgPaint
-                )
-                if (code and 0x04 != 0) canvas.drawRect(
-                    x,
-                    y + sixH,
-                    x + sixW,
-                    y + sixH * 2,
-                    bgPaint
-                )
-                if (code and 0x08 != 0) canvas.drawRect(
-                    x + sixW,
-                    y + sixH,
-                    x + CELL_WIDTH,
-                    y + sixH * 2,
-                    bgPaint
-                )
-                if (code and 0x10 != 0) canvas.drawRect(
-                    x,
-                    y + sixH * 2,
-                    x + sixW,
-                    y + CELL_HEIGHT,
-                    bgPaint
-                )
-                if (code and 0x40 != 0) canvas.drawRect(
-                    x + sixW,
-                    y + sixH * 2,
-                    x + CELL_WIDTH,
-                    y + CELL_HEIGHT,
-                    bgPaint
-                )
+                if (code and 0x01 != 0) canvas.drawRect(x + spacing, y + spacing, x + sixW - spacing, y + sixH - spacing, bgPaint)
+                if (code and 0x02 != 0) canvas.drawRect(x + sixW + spacing, y + spacing, x + CELL_WIDTH - spacing, y + sixH - spacing, bgPaint)
+                if (code and 0x04 != 0) canvas.drawRect(x + spacing, y + sixH + spacing, x + sixW - spacing, y + sixH * 2 - spacing, bgPaint)
+                if (code and 0x08 != 0) canvas.drawRect(x + sixW + spacing, y + sixH + spacing, x + CELL_WIDTH - spacing, y + sixH * 2 - spacing, bgPaint)
+                if (code and 0x10 != 0) canvas.drawRect(x + spacing, y + sixH * 2 + spacing, x + sixW - spacing, y + CELL_HEIGHT - spacing, bgPaint)
+                if (code and 0x40 != 0) canvas.drawRect(x + sixW + spacing, y + sixH * 2 + spacing, x + CELL_WIDTH - spacing, y + CELL_HEIGHT - spacing, bgPaint)
             }
         }
     }
@@ -780,10 +700,7 @@ class TeletextView @JvmOverloads constructor(
             historyIndex = history.size - 1
         }
 
-        android.util.Log.d(
-            "TeletextView",
-            "pushHistory: size=${history.size}, index=$historyIndex, canUndo=${canUndo()}, canRedo=${canRedo()}"
-        )
+        android.util.Log.d("TeletextView", "pushHistory: size=${history.size}, index=$historyIndex, canUndo=${canUndo()}, canRedo=${canRedo()}")
 
         onHistoryChanged?.invoke()
     }
@@ -792,10 +709,7 @@ class TeletextView @JvmOverloads constructor(
      * Undo last action
      */
     fun undo(): Boolean {
-        android.util.Log.d(
-            "TeletextView",
-            "undo() called: historyIndex=$historyIndex, size=${history.size}"
-        )
+        android.util.Log.d("TeletextView", "undo() called: historyIndex=$historyIndex, size=${history.size}")
 
         if (historyIndex <= 0) {
             android.util.Log.d("TeletextView", "undo() blocked: no history")
@@ -814,10 +728,7 @@ class TeletextView @JvmOverloads constructor(
      * Redo last undone action
      */
     fun redo(): Boolean {
-        android.util.Log.d(
-            "TeletextView",
-            "redo() called: historyIndex=$historyIndex, size=${history.size}"
-        )
+        android.util.Log.d("TeletextView", "redo() called: historyIndex=$historyIndex, size=${history.size}")
 
         if (historyIndex >= history.size - 1) {
             android.util.Log.d("TeletextView", "redo() blocked: at end of history")
@@ -861,6 +772,5 @@ class TeletextView @JvmOverloads constructor(
         recomputeAttributes()
         invalidate()
     }
-
 
 }
