@@ -12,7 +12,7 @@ import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
 import android.view.inputmethod.InputMethodManager
 import bg.alesla.teletexting.utils.CharsetManager
-import kotlin.math.floor
+
 
 /**
  * Custom View for rendering Teletext Level 1 pages with full attribute support
@@ -577,7 +577,7 @@ class TeletextView @JvmOverloads constructor(
         // Check flash visibility
         val isFlashing = flashState[row][col]
         if (isFlashing && !flashVisible) return // Hide flashing content
-
+        val displayChar = CharsetManager.mapChar(ch, currentCharset)
         val fgColor = if (blackWhiteMode) Color.WHITE else colors[fgIdx]
 
         if (ch < 0x20) {
@@ -596,15 +596,15 @@ class TeletextView @JvmOverloads constructor(
                 // Clip to both current and next row
                 canvas.clipRect(x, y, x + CELL_WIDTH, y + CELL_HEIGHT * 2)
                 // Draw character at double size, baseline in middle of two-row span
-                val baseline = y + CELL_HEIGHT * 1.5f
-                val displayChar = CharsetManager.mapChar(ch, currentCharset)
+                val baseline = y + CELL_HEIGHT * 2f
+
                 canvas.drawText(displayChar, x + 2, baseline, textPaintDouble)
                 canvas.restore()
             } else {
                 // Normal height text
                 textPaint.color = fgColor
-                val baseline = y + CELL_HEIGHT * 0.75f
-                canvas.drawText(ch.toChar().toString(), x + 2, baseline, textPaint)
+                val baseline = y + CELL_HEIGHT * 1f
+                canvas.drawText(displayChar, x + 2, baseline, textPaint)
             }
         } else {
             // Graphics mosaic
