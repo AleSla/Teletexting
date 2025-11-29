@@ -22,12 +22,12 @@ The application supports **5 teletext formats and 1 image format**:
 2. **Softel EP1** (Softel Page 1) - `.ep1`
 3. **Teletext Packets (T42)** - `.t42`
 4. **Binary Dump** (Raw page data) - `.bin`
-5. **Cebra Teletext TTX** - `.ttx`
+5. **Cebra Teletext TTX** - `.ttx` (the app doesn't parse it properly, for future improvement) 
 6. **Hi-Resolution PNG** (Export only) - `.png`
 
 ### Teletext Rendering Engine
 
-The custom `TeletextView` implements Level 1.5 teletext specifications:
+The custom `TeletextView` implements Level 1 teletext specifications:
 
 - **Grid System**: 40 columns × 25 rows
 - **Level 1 Control Codes**:
@@ -180,7 +180,6 @@ CRC-16-CCITT algorithm:
    - Create directory: `app/src/main/assets/fonts/`
    - Add `teletext.ttf` (normal height font)
    - Add `teletext_double.ttf` (double height font)
-   - See `FONTS_SETUP.md` for font recommendations
 
 4. **Build**:
    ```bash
@@ -237,23 +236,26 @@ Based on **ETSI EN 300 706** standard:
 - 0x0C: Normal height
 - 0x0D: Double height
 - 0x10-0x17: Graphics colors
+- 0x19: Contiguous graphics
+- 0x1A: Separated graphics
 - 0x1C: Black background
 - 0x1D: New background
 - 0x1E: Hold graphics
 - 0x1F: Release graphics
 
 ### Graphics Characters
-- 0x20-0x3F: Separated graphics
-- 0x60-0x7F: Contiguous graphics
+- 0x20-0x3F and 0x60-0x7F: Contiguous graphics by default, transformed into separated, using control code 0x1A before their begining
 - Each character represents 6 sixels (2×3 grid)
 - Bit pattern: 0x01=top-left, 0x02=top-right, 0x04=mid-left, 0x08=mid-right, 0x10=bottom-left, 0x40=bottom-right
 
 ## 🔮 Future Enhancements
 
-Potential features for future implementation:
+Features for future implementation and improvement:
 - Copy/paste regions
 - Search and replace
-- Import from broadcast capture
+- Expanding Undo/Redo functionality
+- Repairing Cebra TTX Parser
+- Level 1.5 features and others
 
 ## 📄 License
 
