@@ -9,6 +9,8 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.inputmethod.BaseInputConnection
 import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.ExtractedText
+import android.view.inputmethod.ExtractedTextRequest
 import android.view.inputmethod.InputConnection
 import android.view.inputmethod.InputMethodManager
 import bg.alesla.teletexting.utils.CharsetManager
@@ -285,11 +287,15 @@ class TeletextView @JvmOverloads constructor(
     override fun onCheckIsTextEditor(): Boolean = true
 
     override fun onCreateInputConnection(outAttrs: EditorInfo): InputConnection {
-        outAttrs.inputType = EditorInfo.TYPE_CLASS_TEXT
-        outAttrs.imeOptions = EditorInfo.IME_ACTION_NONE
+        outAttrs.inputType = EditorInfo.TYPE_CLASS_TEXT or
+                EditorInfo.TYPE_TEXT_FLAG_NO_SUGGESTIONS or
+                EditorInfo.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+
+        outAttrs.imeOptions = EditorInfo.IME_ACTION_NONE or
+                EditorInfo.IME_FLAG_NO_EXTRACT_UI
+
         return TeletextInputConnection(this, true)
     }
-
     private fun showKeyboard() {
         val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         imm.showSoftInput(this, InputMethodManager.SHOW_IMPLICIT)
@@ -301,95 +307,100 @@ class TeletextView @JvmOverloads constructor(
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        // 1. Safety check
+        if (event == null || event.action != KeyEvent.ACTION_DOWN) {
+            return super.onKeyDown(keyCode, event)
+        }
+
+        // 2. Handle Navigation & Special Keys
         when (keyCode) {
-            KeyEvent.KEYCODE_DEL -> {
-                // Save state before deletion
-                pushHistory()
-
-                // Backspace - delete current cell and move back
-                if (_cursorX > 0) {
-                    _cursorX--
-                    pageData[_cursorY][_cursorX] = 0x20
-                } else if (_cursorY > 0) {
-                    _cursorY--
-                    _cursorX = COLS - 1
-                    pageData[_cursorY][_cursorX] = 0x20
-                } else {
-                    // At position (0,0) - wrap to end of page
-                    _cursorY = ROWS - 1
-                    _cursorX = COLS - 1
-                    pageData[_cursorY][_cursorX] = 0x20
-                }
-                onCursorChanged?.invoke(_cursorX, _cursorY)
-                recomputeAttributes()
-                invalidate()
-                return true
-            }
-            KeyEvent.KEYCODE_ENTER -> {
-                // Move to start of next row
-                _cursorY++
-                _cursorX = 0
-
-                // Wrap to top if at bottom
-                if (_cursorY >= ROWS) {
-                    _cursorY = 0
-                }
-                onCursorChanged?.invoke(_cursorX, _cursorY)
-                invalidate()
-                return true
-            }
             KeyEvent.KEYCODE_DPAD_LEFT -> {
-                if (_cursorX > 0) {
-                    _cursorX--
-                } else {
-                    _cursorX = COLS - 1
-                    if (_cursorY > 0) {
-                        _cursorY--
-                    } else {
-                        _cursorY = ROWS - 1
-                    }
-                }
-                onCursorChanged?.invoke(_cursorX, _cursorY)
-                invalidate()
+                moveCursor(-1, 0)
                 return true
             }
             KeyEvent.KEYCODE_DPAD_RIGHT -> {
-                if (_cursorX < COLS - 1) {
-                    _cursorX++
-                } else {
-                    _cursorX = 0
-                    if (_cursorY < ROWS - 1) {
-                        _cursorY++
-                    } else {
-                        _cursorY = 0
-                    }
-                }
-                onCursorChanged?.invoke(_cursorX, _cursorY)
-                invalidate()
+                moveCursor(1, 0)
                 return true
             }
             KeyEvent.KEYCODE_DPAD_UP -> {
-                if (_cursorY > 0) {
-                    _cursorY--
-                } else {
-                    _cursorY = ROWS - 1
-                }
-                onCursorChanged?.invoke(_cursorX, _cursorY)
-                invalidate()
+                moveCursor(0, -1)
                 return true
             }
             KeyEvent.KEYCODE_DPAD_DOWN -> {
-                if (_cursorY < ROWS - 1) {
-                    _cursorY++
-                } else {
-                    _cursorY = 0
-                }
-                onCursorChanged?.invoke(_cursorX, _cursorY)
-                invalidate()
+                moveCursor(0, 1)
+                return true
+            }
+            KeyEvent.KEYCODE_ENTER -> {
+                moveCursor(0, 1)
+                _cursorX = 0
+                return true
+            }
+            KeyEvent.KEYCODE_DEL -> {
+                handleBackspace()
                 return true
             }
         }
+
+        // 3. Handle Typing (Letters, Digits, Symbols)
+        // This gets the character associated with the key (e.g., Key 'A' -> 'a')
+        val charCode = event.unicodeChar
+
+        // Check if it is a valid Teletext character (ASCII 0x20 to 0x7F)
+        if (charCode in 0x20..0x7F) {
+            insertCharacter(charCode.toChar())
+            return true
+        }
+
+        // 4. Fallback
         return super.onKeyDown(keyCode, event)
+    }
+
+    private fun moveCursor(dx: Int, dy: Int) {
+        if (dx != 0) {
+            _cursorX += dx
+            // Wrap horizontally
+            if (_cursorX < 0) {
+                _cursorX = COLS - 1
+                if (_cursorY > 0) _cursorY-- else _cursorY = ROWS - 1
+            } else if (_cursorX >= COLS) {
+                _cursorX = 0
+                if (_cursorY < ROWS - 1) _cursorY++ else _cursorY = 0
+            }
+        }
+
+        if (dy != 0) {
+            _cursorY += dy
+            // Wrap vertically
+            if (_cursorY < 0) _cursorY = ROWS - 1
+            else if (_cursorY >= ROWS) _cursorY = 0
+        }
+
+        onCursorChanged?.invoke(_cursorX, _cursorY)
+        invalidate()
+    }
+
+    // 5. Helper function for backspace (used by multiple methods)
+    private fun handleBackspace() {
+        pushHistory()
+
+        // Move cursor back
+        if (_cursorX > 0) {
+            _cursorX--
+        } else if (_cursorY > 0) {
+            _cursorY--
+            _cursorX = COLS - 1
+        } else {
+            // At (0,0), wrap to end
+            _cursorY = ROWS - 1
+            _cursorX = COLS - 1
+        }
+
+        // Delete character at cursor position
+        pageData[_cursorY][_cursorX] = 0x20
+
+        onCursorChanged?.invoke(_cursorX, _cursorY)
+        recomputeAttributes()
+        invalidate()
     }
 
     fun insertCharacter(char: Char) {
@@ -425,6 +436,7 @@ class TeletextView @JvmOverloads constructor(
     }
 
     // Custom InputConnection for handling text input
+    // Custom InputConnection for handling text input
     private inner class TeletextInputConnection(
         targetView: View,
         fullEditor: Boolean
@@ -432,7 +444,14 @@ class TeletextView @JvmOverloads constructor(
 
         override fun commitText(text: CharSequence?, newCursorPosition: Int): Boolean {
             text?.forEach { char ->
-                insertCharacter(char)
+                if (char.code in 0x20..0x7F) {
+                    // Handle standard characters
+                    insertCharacter(char)
+                } else if (char == '\n') {
+                    // Handle newlines
+                    moveCursor(0, 1)
+                    _cursorX = 0
+                }
             }
             return true
         }
@@ -440,18 +459,21 @@ class TeletextView @JvmOverloads constructor(
         override fun deleteSurroundingText(beforeLength: Int, afterLength: Int): Boolean {
             if (beforeLength > 0) {
                 repeat(beforeLength) {
-                    if (cursorX > 0) {
-                        cursorX--
-                    } else if (cursorY > 0) {
-                        cursorY--
-                        cursorX = COLS - 1
-                    }
-                    pageData[cursorY][cursorX] = 0x20
+                    handleBackspace()
                 }
-                recomputeAttributes()
-                invalidate()
             }
             return true
+        }
+
+        override fun sendKeyEvent(event: KeyEvent?): Boolean {
+            if (event?.action == KeyEvent.ACTION_DOWN) {
+                // CRITICAL FIX:
+                // If the keyboard sends a KeyEvent (like SwiftKey sending '1'),
+                // we pass it directly to the View's logic.
+                // This ensures consistent handling for both Physical and Soft keyboards.
+                return onKeyDown(event.keyCode, event)
+            }
+            return super.sendKeyEvent(event)
         }
     }
 
