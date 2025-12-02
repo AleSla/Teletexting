@@ -2,7 +2,7 @@
 
 ![App Icon](https://raw.githubusercontent.com/AleSla/Teletexting/refs/heads/main/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png)
 
-A pure native Android application for viewing and editing teletext pages in multiple historical formats.
+A vibe-coded pure native Android application for viewing and editing teletext pages in multiple historical formats.
 
 ## 📋 Project Specifications
 
