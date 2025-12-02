@@ -264,7 +264,7 @@ No license specified.
 ## 🙏 Acknowledgments
 
 - ETSI EN 300 706: Teletext specification
-- Teletext Meddler SE: Reference implementation
+- @AndrewNile 's Teletext Meddler SE: Reference implementation
 - Sample files provided for testing
 
 ## 📞 Support
