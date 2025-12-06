@@ -114,6 +114,11 @@ class MainActivity : AppCompatActivity() {
         updateStatusBar()
         updatePageDisplay()
         requestStoragePermissions()
+
+        teletextView.onSelectionChanged = { start, end ->
+            invalidateOptionsMenu() // Update menu items
+            updateStatusBar() // Show selection info
+        }
     }
 
     private fun requestStoragePermissions() {
@@ -143,6 +148,17 @@ class MainActivity : AppCompatActivity() {
 
     override fun onPrepareOptionsMenu(menu: Menu): Boolean {
         updateUndoRedoButtons(menu)
+
+        val hasSelection = teletextView.selectionStartRow != null
+        val hasClipboard = teletextView.hasClipboard()
+
+        menu.findItem(R.id.action_extend_selection)?.isEnabled = hasSelection
+        menu.findItem(R.id.action_clear_selection)?.isEnabled = hasSelection
+        menu.findItem(R.id.action_copy)?.isEnabled = true // Can always copy current row
+        menu.findItem(R.id.action_cut)?.isEnabled = true
+        menu.findItem(R.id.action_paste)?.isEnabled = hasClipboard
+        menu.findItem(R.id.action_insert)?.isEnabled = hasClipboard
+
         return super.onPrepareOptionsMenu(menu)
     }
 
@@ -195,6 +211,54 @@ class MainActivity : AppCompatActivity() {
 
             R.id.action_clear -> {
                 clearPage()
+                true
+            }
+
+            R.id.action_start_selection -> {
+                teletextView.startSelection()
+                Toast.makeText(this, "Selection started at row ${teletextView.cursorY}", Toast.LENGTH_SHORT).show()
+                true
+            }
+            R.id.action_extend_selection -> {
+                teletextView.extendSelection()
+                val start = teletextView.selectionStartRow
+                val end = teletextView.selectionEndRow
+                Toast.makeText(this, "Selection: rows $start-$end", Toast.LENGTH_SHORT).show()
+                true
+            }
+            R.id.action_clear_selection -> {
+                teletextView.clearSelection()
+                Toast.makeText(this, "Selection cleared", Toast.LENGTH_SHORT).show()
+                true
+            }
+            R.id.action_copy -> {
+                if (teletextView.copySelection()) {
+                    val info = teletextView.getClipboardInfo()
+                    Toast.makeText(this, "Copied: $info", Toast.LENGTH_SHORT).show()
+                }
+                true
+            }
+            R.id.action_cut -> {
+                if (teletextView.cutSelection()) {
+                    val info = teletextView.getClipboardInfo()
+                    Toast.makeText(this, "Cut: $info", Toast.LENGTH_SHORT).show()
+                }
+                true
+            }
+            R.id.action_paste -> {
+                if (teletextView.pasteAtCursor()) {
+                    Toast.makeText(this, "Pasted at row ${teletextView.cursorY}", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "Nothing to paste", Toast.LENGTH_SHORT).show()
+                }
+                true
+            }
+            R.id.action_insert -> {
+                if (teletextView.insertAtCursor()) {
+                    Toast.makeText(this, "Inserted at row ${teletextView.cursorY}", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "Nothing to insert", Toast.LENGTH_SHORT).show()
+                }
                 true
             }
 
@@ -680,7 +744,17 @@ class MainActivity : AppCompatActivity() {
 
         // Update status bar fields
         findViewById<TextView>(R.id.tvStatusPage).text = "P$currentPageNumber"
-        findViewById<TextView>(R.id.tvStatusPos).text = "($x,$y)"
+
+        // Show selection info if active
+        val posText = if (teletextView.selectionStartRow != null && teletextView.selectionEndRow != null) {
+            val start = minOf(teletextView.selectionStartRow!!, teletextView.selectionEndRow!!)
+            val end = maxOf(teletextView.selectionStartRow!!, teletextView.selectionEndRow!!)
+            "Sel: $start-$end"
+        } else {
+            "($x,$y)"
+        }
+        findViewById<TextView>(R.id.tvStatusPos).text = posText
+
         findViewById<TextView>(R.id.tvStatusChar).text = String.format("0x%02X", ch)
 
         // Calculate CRC
