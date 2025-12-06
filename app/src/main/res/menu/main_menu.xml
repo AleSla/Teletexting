@@ -45,6 +45,48 @@
         app:showAsAction="ifRoom" />
 
     <item
+        android:id="@+id/action_start_selection"
+        android:title="Start Selection"
+        android:icon="@drawable/start"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_extend_selection"
+        android:title="Extend Selection"
+        android:icon="@drawable/extend"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_clear_selection"
+        android:title="Clear Selection"
+        android:icon="@drawable/clear_select"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_copy"
+        android:title="Copy"
+        android:icon="@drawable/copy"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_cut"
+        android:title="Cut"
+        android:icon="@drawable/cut"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_paste"
+        android:title="Paste"
+        android:icon="@drawable/paste"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_insert"
+        android:title="Insert"
+        android:icon="@drawable/insert"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/action_toggle_grid"
         android:title="Toggle Grid"
         android:icon="@drawable/grid_on"
