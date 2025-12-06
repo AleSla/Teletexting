@@ -49,6 +49,7 @@ The custom `TeletextView` implements Level 1 teletext specifications:
 - **Attribute Toggling**: Insert flash and other control codes
 - **Color Palette**: Quick access to 8 teletext colors in 2 modes: alphanumeric and mosaic symbols
 - **Visual Toggles**: Show/hide grid and control codes, black and white mode
+- **Page Editing Options**: Select, copy, cut, and paste entire rows or regions of teletext pages
 
 ### Status Display
 
@@ -147,6 +148,8 @@ CRC-16-CCITT algorithm:
 - Save / Save As
 - Export PNG
 - Clear page
+- Start / Extend / Clear selection of a teletext page
+- Copy / Cut / Paste / Insert single row, or a selection of a page
 - Toggle grid overlay
 - Show control codes
 - Insert flash attribute
@@ -251,7 +254,6 @@ Based on **ETSI EN 300 706** standard:
 ## 🔮 Future Enhancements
 
 Features for future implementation and improvement:
-- Copy/paste regions
 - Search and replace
 - Expanding Undo/Redo functionality
 - Repairing Cebra TTX Parser
