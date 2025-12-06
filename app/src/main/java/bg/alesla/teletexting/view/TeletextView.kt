@@ -526,6 +526,203 @@ class TeletextView @JvmOverloads constructor(
         }
     }
 
+    // Clipboard data holder
+    private data class ClipboardData(
+        val rows: List<IntArray>,
+        val startRow: Int,
+        val endRow: Int
+    )
+
+    private var clipboard: ClipboardData? = null
+
+    // Selection state
+    var selectionStartRow: Int? = null
+        private set
+    var selectionEndRow: Int? = null
+        private set
+    private var isSelecting = false
+
+    var onSelectionChanged: ((start: Int?, end: Int?) -> Unit)? = null
+
+    /**
+     * Start selection mode at current cursor row
+     */
+    fun startSelection() {
+        selectionStartRow = _cursorY
+        selectionEndRow = _cursorY
+        isSelecting = true
+        onSelectionChanged?.invoke(selectionStartRow, selectionEndRow)
+        invalidate()
+    }
+
+    /**
+     * Extend selection to current cursor row
+     */
+    fun extendSelection() {
+        if (!isSelecting || selectionStartRow == null) {
+            startSelection()
+            return
+        }
+        selectionEndRow = _cursorY
+        onSelectionChanged?.invoke(selectionStartRow, selectionEndRow)
+        invalidate()
+    }
+
+    /**
+     * Clear selection
+     */
+    fun clearSelection() {
+        selectionStartRow = null
+        selectionEndRow = null
+        isSelecting = false
+        onSelectionChanged?.invoke(null, null)
+        invalidate()
+    }
+
+    /**
+     * Copy selected region to clipboard
+     * If only start row selected, copies from start to end of page
+     */
+    fun copySelection(): Boolean {
+        val start = selectionStartRow ?: _cursorY
+        val end = selectionEndRow ?: (ROWS - 1)
+
+        // Ensure start <= end
+        val actualStart = minOf(start, end)
+        val actualEnd = maxOf(start, end)
+
+        // Copy rows
+        val copiedRows = mutableListOf<IntArray>()
+        for (row in actualStart..actualEnd) {
+            copiedRows.add(pageData[row].clone())
+        }
+
+        clipboard = ClipboardData(copiedRows, actualStart, actualEnd)
+
+        android.util.Log.d("TeletextView", "Copied rows $actualStart-$actualEnd (${copiedRows.size} rows)")
+
+        return true
+    }
+
+    /**
+     * Cut selected region to clipboard
+     */
+    fun cutSelection(): Boolean {
+        if (copySelection()) {
+            pushHistory()
+
+            val start = selectionStartRow ?: _cursorY
+            val end = selectionEndRow ?: (ROWS - 1)
+
+            val actualStart = minOf(start, end)
+            val actualEnd = maxOf(start, end)
+
+            // Clear selected rows
+            for (row in actualStart..actualEnd) {
+                for (col in 0 until COLS) {
+                    pageData[row][col] = 0x20
+                }
+            }
+
+            recomputeAttributes()
+            invalidate()
+            clearSelection()
+
+            return true
+        }
+        return false
+    }
+
+    /**
+     * Paste clipboard content at current cursor row
+     * Overwrites existing content
+     */
+    fun pasteAtCursor(): Boolean {
+        val data = clipboard ?: return false
+
+        pushHistory()
+
+        var targetRow = _cursorY
+
+        for (sourceRow in data.rows) {
+            if (targetRow >= ROWS) break
+
+            // Copy entire row
+            for (col in 0 until COLS) {
+                pageData[targetRow][col] = sourceRow[col]
+            }
+
+            targetRow++
+        }
+
+        recomputeAttributes()
+        invalidate()
+        clearSelection()
+
+        android.util.Log.d("TeletextView", "Pasted ${data.rows.size} rows at row $_cursorY")
+
+        return true
+    }
+
+    /**
+     * Insert clipboard content at current cursor row
+     * Shifts existing content down
+     */
+    fun insertAtCursor(): Boolean {
+        val data = clipboard ?: return false
+
+        pushHistory()
+
+        val insertRow = _cursorY
+        val rowsToInsert = data.rows.size
+
+        // Check if we have space
+        if (insertRow + rowsToInsert > ROWS) {
+            // Truncate if necessary
+            android.util.Log.d("TeletextView", "Warning: Insert would exceed page bounds")
+        }
+
+        // Shift rows down
+        val rowsToShift = minOf(ROWS - insertRow - rowsToInsert, ROWS - insertRow)
+        for (row in (insertRow + rowsToShift - 1) downTo insertRow) {
+            if (row + rowsToInsert < ROWS) {
+                for (col in 0 until COLS) {
+                    pageData[row + rowsToInsert][col] = pageData[row][col]
+                }
+            }
+        }
+
+        // Insert copied rows
+        for (i in 0 until minOf(rowsToInsert, ROWS - insertRow)) {
+            for (col in 0 until COLS) {
+                pageData[insertRow + i][col] = data.rows[i][col]
+            }
+        }
+
+        recomputeAttributes()
+        invalidate()
+        clearSelection()
+
+        return true
+    }
+
+    /**
+     * Check if clipboard has data
+     */
+    fun hasClipboard(): Boolean {
+        return clipboard != null
+    }
+
+    /**
+     * Get clipboard info for display
+     */
+    fun getClipboardInfo(): String? {
+        val data = clipboard ?: return null
+        val rowCount = data.rows.size
+        return "Rows ${data.startRow}-${data.endRow} ($rowCount rows)"
+    }
+
+
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
@@ -549,12 +746,28 @@ class TeletextView @JvmOverloads constructor(
             }
         }
 
+        // Draw selection overlay
+        if (selectionStartRow != null && selectionEndRow != null) {
+            val start = minOf(selectionStartRow!!, selectionEndRow!!)
+            val end = maxOf(selectionStartRow!!, selectionEndRow!!)
+
+            val selectionPaint = Paint().apply {
+                color = Color.argb(80, 0, 255, 0) // Semi-transparent green
+                style = Paint.Style.FILL
+            }
+
+            for (row in start..end) {
+                val y = row * CELL_HEIGHT
+                canvas.drawRect(0f, y, COLS * CELL_WIDTH, y + CELL_HEIGHT, selectionPaint)
+            }
+        }
         // Draw cursor
         if (cursorVisible) {
             val x = _cursorX * CELL_WIDTH
             val y = _cursorY * CELL_HEIGHT
             canvas.drawRect(x + 2, y + 2, x + CELL_WIDTH - 2, y + CELL_HEIGHT - 2, cursorPaint)
         }
+
     }
 
     private fun drawBackgrounds(canvas: Canvas) {
