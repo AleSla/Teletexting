@@ -211,6 +211,7 @@ CRC-16-CCITT algorithm:
 1. **Save** to overwrite current file
 2. **Save As** to create new file with selected format
 3. **Export PNG** to create high-resolution image
+4. **Export HTML** to export the teletext pages in HTML
 
 ### Navigation
 - **Prev/Next buttons** for multi-page documents
@@ -255,7 +256,6 @@ Based on **ETSI EN 300 706** standard:
 
 Features for future implementation and improvement:
 - Search and replace
-- Expanding Undo/Redo functionality
 - Repairing Cebra TTX Parser
 - Level 1.5 features and others
 
