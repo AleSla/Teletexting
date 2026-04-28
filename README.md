@@ -16,14 +16,15 @@ A vibe-coded pure native Android application for viewing and editing teletext pa
 
 ### File Format Support
 
-The application supports **5 teletext formats and 1 image format**:
+The application supports **6 teletext formats and 1 image format**:
 
 1. **MRG Systems TTI** (Teletext Interchange) - `.tti`
-2. **Softel EP1** (Softel Page 1) - `.ep1`
-3. **Teletext Packets (T42)** - `.t42`
-4. **Binary Dump** (Raw page data) - `.bin`
-5. **Cebra Teletext TTX** - `.ttx` (the app doesn't parse it properly, for future improvement) 
-6. **Hi-Resolution PNG** (Export only) - `.png`
+2. **7-bit Escaped TTI** (TTI eXtended) - `.ttix`
+3. **Softel EP1** (Softel Page 1) - `.ep1`
+4. **Teletext Packets (T42)** - `.t42`
+5. **Binary Dump** (Raw page data) - `.bin`
+6. **Cebra Teletext TTX** - `.ttx` (the app doesn't parse it properly, for future improvement) 
+7. **Hi-Resolution PNG** (Export only) - `.png`
 
 ### Teletext Rendering Engine
 
@@ -32,7 +33,7 @@ The custom `TeletextView` implements Level 1 teletext specifications:
 - **Grid System**: 40 columns × 25 rows
 - **Level 1 Control Codes**:
   - Text colors (Red, Green, Yellow, Blue, Magenta, Cyan, White, Black)
-  - Graphics colors and mosaic characters
+  - Graphics colors, and mosaic characters
   - Flash attribute (animated at 500ms intervals)
   - Double height text
   - Background colors (Black background, New background)
@@ -44,7 +45,7 @@ The custom `TeletextView` implements Level 1 teletext specifications:
 
 - **File Operations**: Open, Save, Save As using Android Storage Access Framework
 - **Page Navigation**: Previous/Next page buttons, and specific magazine/page/subpage selection
-- **Cursor Control**: Tap any cell to place cursor
+- **Cursor Control**: Tap any cell to place the cursor
 - **Character Input**: Tap cursor position to enter characters
 - **Attribute Toggling**: Insert flash and other control codes
 - **Color Palette**: Quick access to 8 teletext colors in 2 modes: alphanumeric and mosaic symbols
@@ -68,6 +69,7 @@ bg.alesla.teletexting/
 │   └── TeletextView.kt         # Custom rendering view
 ├── parsers/
 │   ├── TTIParser.kt            # MRG Systems TTI format
+│   ├── TTIxParser.kt           # 7-bit Escaped TTIx format
 │   ├── EP1Parser.kt            # Softel EP1 format
 │   ├── T42Parser.kt            # Teletext Packets
 │   ├── BinaryParser.kt         # Raw binary format
@@ -104,8 +106,12 @@ Each parser implements:
 
 #### TTI Format
 - Text-based with escape sequences
-- Control codes escaped as `ESC + (code + 0x40)`
+- Control codes escaped as `ESC + (code + 0x40)` 
 - Metadata: Page number, description, charset
+
+#### TTIx Format
+- Almost the same as TTI - text-based with escape sequences
+- Control codes converted/escaped to fit within 7-bit ASCII by using Prestel escape codes
 
 #### EP1 Format
 - Binary with 6-byte header: `0xFE 0x01 [4 bytes]`
@@ -114,7 +120,7 @@ Each parser implements:
 #### T42 Format
 - 42-byte packets: 2 address bytes + 40 data bytes
 - Hamming 8/4 encoding for addresses
-- Row 0 contains page number in hamming-encoded header
+- Row 0 contains the page number in the Hamming-encoded header
 
 #### TTX Format
 - Similar to T42 with 42-byte packets
@@ -137,7 +143,7 @@ CRC-16-CCITT algorithm:
 
 ### Main Layout
 - **Toolbar**: App title and menu actions
-- **ScrollView**: Allows panning for large teletext display
+- **ScrollView**: Allows panning for a large teletext display
 - **TeletextView**: Centered rendering canvas
 - **Navigation**: Page previous/next buttons and address bar with selections
 - **Color Palette**: 16 color buttons for quick attribute insertion: 8 for alphanumeric, and 8 for mosaic symbols 
@@ -149,7 +155,7 @@ CRC-16-CCITT algorithm:
 - Export PNG
 - Clear page
 - Start / Extend / Clear selection of a teletext page
-- Copy / Cut / Paste / Insert single row, or a selection of a page
+- Copy / Cut / Paste / Insert a single row, or a selection of a page
 - Toggle grid overlay
 - Show control codes
 - Insert flash attribute
@@ -167,14 +173,14 @@ CRC-16-CCITT algorithm:
 
 1. **Clone/Create Project**:
    ```bash
-   # Create new Android project in Android Studio
+   # Create a new Android project in Android Studio
    # Package: bg.alesla.teletexting
    # Minimum SDK: 23
    # Target SDK: 33
    ```
 
 2. **Add Files**:
-   - Copy all Kotlin files to corresponding packages
+   - Copy all Kotlin files to the corresponding packages
    - Copy XML files to `res/layout/` and `res/menu/`
    - Update `AndroidManifest.xml`
    - Update `build.gradle` dependencies
@@ -198,8 +204,8 @@ CRC-16-CCITT algorithm:
 
 ### Opening Files
 1. Tap **Open** in toolbar
-2. Select a teletext file (.tti, .ep1, .t42, .ttx, .bin)
-3. File loads and displays in grid
+2. Select a teletext file (.tti, .ttix, .ep1, .t42, .ttx, .bin)
+3. File loads and displays in a grid
 
 ### Editing
 1. **Tap any cell** to move cursor
@@ -209,9 +215,10 @@ CRC-16-CCITT algorithm:
 
 ### Saving
 1. **Save** to overwrite current file
-2. **Save As** to create new file with selected format
-3. **Export PNG** to create high-resolution image
-4. **Export HTML** to export the teletext pages in HTML
+2. **Save As** to create a new file with the selected format
+3. **Export As** to export the file in another format
+4. **Export PNG** to create high-resolution image
+5. **Export HTML** to export the teletext pages in HTML
 
 ### Navigation
 - **Prev/Next buttons** for multi-page documents
@@ -248,7 +255,7 @@ Based on **ETSI EN 300 706** standard:
 - 0x1F: Release graphics
 
 ### Graphics Characters
-- 0x20-0x3F and 0x60-0x7F: Contiguous graphics by default, transformed into separated, using control code 0x1A before their begining
+- 0x20-0x3F and 0x60-0x7F: Contiguous graphics by default, transformed into separated, using control code 0x1A before their beginning
 - Each character represents 6 sixels (2×3 grid)
 - Bit pattern: 0x01=top-left, 0x02=top-right, 0x04=mid-left, 0x08=mid-right, 0x10=bottom-left, 0x40=bottom-right
 
