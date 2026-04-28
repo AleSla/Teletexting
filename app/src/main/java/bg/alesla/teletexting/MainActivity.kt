@@ -28,6 +28,7 @@ import bg.alesla.teletexting.parsers.EP1Parser
 import bg.alesla.teletexting.parsers.T42Parser
 import bg.alesla.teletexting.parsers.TTIParser
 import bg.alesla.teletexting.parsers.TTXParser
+import bg.alesla.teletexting.parsers.TTIxParser
 import bg.alesla.teletexting.utils.CRCCalculator
 import bg.alesla.teletexting.utils.CharsetManager
 import bg.alesla.teletexting.view.TeletextView
@@ -54,7 +55,7 @@ class MainActivity : AppCompatActivity() {
     ) : Serializable
 
     enum class FileFormat {
-        TTI, EP1, T42, BIN, TTX
+        TTI, TTIX, EP1, T42, BIN, TTX
     }
 
     private val openFileLauncher = registerForActivityResult(
@@ -396,6 +397,14 @@ class MainActivity : AppCompatActivity() {
                         // rather than mutating allPages directly. For now, we'll sync it carefully.
                         withContext(Dispatchers.Main) { loadTTIPages(content) }
                     }
+                    "ttix" -> {
+                        newFormat = FileFormat.TTIX
+                        val content = String(data, Charsets.UTF_8)
+                        val parsedPages = TTIxParser.parseMultiPage(content)
+                        for (page in parsedPages) {
+                            tempPages.add(PageData(page.pageNumber, page.subPage, page.data))
+                        }
+                    }
                     "ep1" -> {
                         newFormat = FileFormat.EP1
                         EP1Parser.parse(data)?.let {
@@ -626,6 +635,12 @@ class MainActivity : AppCompatActivity() {
                         )
                         TTIParser.serialize(page).toByteArray()
                     }
+                    FileFormat.TTIX -> {
+                        val ttixPages = allPages.map {
+                            TTIxParser.TTIxPage(it.pageNumber, it.subPage, currentDescription, it.data)
+                        }
+                        TTIxParser.serializeMultiPage(ttixPages)
+                    }
                     FileFormat.EP1 -> EP1Parser.serialize(teletextView.pageData)
                     FileFormat.T42 -> T42Parser.serializeMultiPage(allPages.map { it.data })
                     FileFormat.TTX -> TTXParser.serialize(teletextView.pageData)
@@ -652,7 +667,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showExportDialog() {
-        val exportFormats = arrayOf("PNG Image", "TTI", "T42", "EP1", "TTX", "Binary", "HTML Pages")
+        val exportFormats = arrayOf("PNG Image", "TTI", "TTIx", "T42", "EP1", "TTX", "Binary", "HTML Pages")
 
         MaterialAlertDialogBuilder(this)
             .setTitle("Export")
@@ -660,11 +675,12 @@ class MainActivity : AppCompatActivity() {
                 when (which) {
                     0 -> exportPng()
                     1 -> exportToFormat("TTI", "text/plain", "tti")
-                    2 -> exportToFormat("T42", "application/octet-stream", "t42")
-                    3 -> exportToFormat("EP1", "application/octet-stream", "ep1")
-                    4 -> exportToFormat("TTX", "application/octet-stream", "ttx")
-                    5 -> exportToFormat("Binary", "application/octet-stream", "bin")
-                    6 -> exportHtmlDirLauncher.launch(null) // Launch Folder Picker
+                    2 -> exportToFormat("TTIx", "application/octet-stream", "ttix")
+                    3 -> exportToFormat("T42", "application/octet-stream", "t42")
+                    4 -> exportToFormat("EP1", "application/octet-stream", "ep1")
+                    5 -> exportToFormat("TTX", "application/octet-stream", "ttx")
+                    6 -> exportToFormat("Binary", "application/octet-stream", "bin")
+                    7 -> exportHtmlDirLauncher.launch(null) // Launch Folder Picker
                 }
             }
             .show()
@@ -740,6 +756,22 @@ class MainActivity : AppCompatActivity() {
         }
     }
 }
+    private val exportTTIxLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            result.data?.data?.let { uri ->
+                try {
+                    val page = TTIxParser.TTIxPage(currentPageNumber, currentSubPage, currentDescription, teletextView.pageData)
+                    val data = TTIxParser.serialize(page).toByteArray()
+                    contentResolver.openOutputStream(uri)?.use { it.write(data) }
+                    Toast.makeText(this, "Exported as TTIx", Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    showError("Error exporting TTIx: ${e.message}")
+                }
+            }
+        }
+    }
 
 private val exportT42Launcher = registerForActivityResult(
     ActivityResultContracts.StartActivityForResult()
@@ -799,6 +831,7 @@ private fun exportToFormat(formatName: String, mimeType: String, extension: Stri
     
     when (extension) {
         "tti" -> exportTTILauncher.launch(intent)
+        "ttix" -> exportTTIxLauncher.launch(intent)
         "t42" -> exportT42Launcher.launch(intent)
         "ep1" -> exportEP1Launcher.launch(intent)
         "ttx" -> exportTTXLauncher.launch(intent)
@@ -1190,6 +1223,7 @@ private fun exportBinaryToUri(uri: Uri) {
     private fun getExtension(format: FileFormat): String {
         return when (format) {
             FileFormat.TTI -> "tti"
+            FileFormat.TTIX -> "ttix"
             FileFormat.EP1 -> "ep1"
             FileFormat.T42 -> "t42"
             FileFormat.TTX -> "ttx"
